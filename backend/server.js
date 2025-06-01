@@ -22,32 +22,20 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/colleges', require('./routes/colleges'));
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({ message: 'College Website Generator API is running' });
-});
-
-// MongoDB connection options
+// Improved MongoDB connection options for Vercel
 const mongooseOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 30000, // Increased from 5000 to 30000
+  serverSelectionTimeoutMS: 5000, // Reduced timeout for faster failure detection
   socketTimeoutMS: 45000,
-  connectTimeoutMS: 30000, // Increased from 10000 to 30000
+  connectTimeoutMS: 10000,
   maxPoolSize: 10,
   minPoolSize: 1,
-  maxIdleTimeMS: 60000,
+  maxIdleTimeMS: 30000, // Reduced idle time
   retryWrites: true,
-  w: 'majority'
+  w: 'majority',
+  bufferCommands: false, // Disable mongoose buffering
+  bufferMaxEntries: 0 // Disable mongoose buffering
 };
 
 // Global connection variable
@@ -60,78 +48,135 @@ const connectDB = async () => {
       throw new Error('MONGODB_URI environment variable is not set');
     }
 
-    // If we have a cached connection, return it
-    if (cachedDb) {
+    // Check if we already have a connection
+    if (cachedDb && mongoose.connection.readyState === 1) {
+      console.log('Using cached MongoDB connection');
       return cachedDb;
     }
 
-    // For serverless environments
-    if (process.env.VERCEL) {
-      if (mongoose.connection.readyState === 0) {
-        await mongoose.connect(uri, mongooseOptions);
-        cachedDb = mongoose.connection;
-      }
-    } else {
-      // For regular environments
-      await mongoose.connect(uri, mongooseOptions);
-      cachedDb = mongoose.connection;
+    // Close existing connection if it's in a bad state
+    if (mongoose.connection.readyState === 2 || mongoose.connection.readyState === 3) {
+      await mongoose.connection.close();
     }
 
-    console.log('Connected to MongoDB successfully');
-    console.log('MongoDB connection state:', { state: mongoose.connection.readyState });
-  } catch (err) {
-    console.error('MongoDB connection error details:', {
-      name: err.name,
-      message: err.message,
-      code: err.code,
-      stack: err.stack
-    });
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(uri, mongooseOptions);
     
-    if (err.name === 'MongoServerSelectionError') {
-      console.error('Could not connect to MongoDB server. Please check if:', {
-        checks: [
-          'The server is running and accessible',
-          'The connection string is correct',
-          'Network connectivity is available'
-        ]
-      });
-    } else if (err.name === 'MongoParseError') {
-      console.error('Invalid MongoDB connection string. Please check your MONGODB_URI environment variable.');
-    } else if (err.name === 'MongoNetworkError') {
-      console.error('Network error while connecting to MongoDB. Please check your network connection.');
-    }
-    process.exit(1);
+    cachedDb = mongoose.connection;
+    console.log('Connected to MongoDB successfully');
+    console.log('MongoDB connection state:', mongoose.connection.readyState);
+    
+    return cachedDb;
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    cachedDb = null;
+    throw err;
   }
 };
 
-// Call connectDB
-connectDB();
-
-// Add connection event listeners
+// Connection event listeners
 mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', { error: err.message });
+  console.error('MongoDB connection error:', err);
+  cachedDb = null;
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.error('MongoDB disconnected');
+  console.log('MongoDB disconnected');
+  cachedDb = null;
 });
 
 mongoose.connection.on('reconnected', () => {
   console.log('MongoDB reconnected');
+  cachedDb = mongoose.connection;
+});
+
+// Middleware to ensure connection before handling requests
+const ensureConnection = async (req, res, next) => {
+  try {
+    if (!cachedDb || mongoose.connection.readyState !== 1) {
+      console.log('Reconnecting to MongoDB...');
+      await connectDB();
+    }
+    next();
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    res.status(503).json({ 
+      error: 'Database connection failed', 
+      message: 'Please try again in a moment' 
+    });
+  }
+};
+
+// Apply connection middleware to API routes
+app.use('/api', ensureConnection);
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/colleges', require('./routes/colleges'));
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const states = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+    
+    res.json({ 
+      status: 'ok',
+      database: {
+        state: states[dbState],
+        ready: dbState === 1
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error',
+      database: { state: 'error', ready: false }
+    });
+  }
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'College Website Generator API is running' });
+});
+
+// Initialize connection
+connectDB().catch(err => {
+  console.error('Failed to connect to MongoDB on startup:', err);
+  // Don't exit process in serverless environment
+  if (!process.env.VERCEL) {
+    process.exit(1);
+  }
 });
 
 // Handle serverless function cleanup
 if (process.env.VERCEL) {
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received. Closing MongoDB connection...');
-    await mongoose.connection.close();
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.close();
+    }
     process.exit(0);
   });
 }
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error stack:', err.stack);
+  
+  // Handle MongoDB specific errors
+  if (err.name === 'MongooseError' || err.name === 'MongoError') {
+    return res.status(503).json({ 
+      error: 'Database connection issue', 
+      message: 'Please try again in a moment' 
+    });
+  }
+  
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
