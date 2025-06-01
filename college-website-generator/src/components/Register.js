@@ -76,10 +76,17 @@ const Register = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password
+      }, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
       });
       localStorage.setItem('token', response.data.token);
       navigate('/profile');
     } catch (error) {
+      console.error('Registration error:', error.response?.data || error.message);
       setError(error.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);
