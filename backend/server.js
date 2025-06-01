@@ -11,7 +11,7 @@ app.use(express.json());
 
 // CORS configuration
 app.use(cors({
-  origin: ['https://websitecreator-ttdr.vercel.app', 'https://websitecreator-cgzt.vercel.app'],
+  origin: ['https://websitecreator-ttdr.vercel.app', 'https://websitecreator-cgzt.vercel.app', 'https://websitecreator-4.onrender.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
@@ -140,4 +140,4 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Export for Vercel
-module.exports = app; 
+module.exports = app;
