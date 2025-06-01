@@ -1,46 +1,55 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-const User = require('../models/User');
+const { MongoClient } = require('mongodb');
 
 const router = express.Router();
 
-// Connection management for serverless
-const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) {
-    return;
+// MongoDB client instance
+let cachedClient = null;
+let cachedDb = null;
+
+const connectToDatabase = async () => {
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
   }
 
-  try {
-    const uri = process.env.MONGODB_URI;
-    if (!uri) {
-      throw new Error('MONGODB_URI not found');
-    }
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('MONGODB_URI environment variable is not set');
+  }
 
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 20000,
-      maxPoolSize: 5,
-      minPoolSize: 0,
-      bufferCommands: false,
-      bufferMaxEntries: 0,
-    });
+  const client = new MongoClient(uri, {
+    maxPoolSize: 5,
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 15000,
+    connectTimeoutMS: 10000,
+    maxIdleTimeMS: 30000,
+  });
+
+  try {
+    await client.connect();
+    const db = client.db(); // Uses database from connection string
     
-    console.log('MongoDB connected');
+    cachedClient = client;
+    cachedDb = db;
+    
+    console.log('Connected to MongoDB successfully');
+    return { client, db };
   } catch (error) {
     console.error('MongoDB connection error:', error);
     throw error;
   }
 };
 
-// Register route with direct connection handling
+// Register route using pure MongoDB driver
 router.post('/register', async (req, res) => {
+  let client = null;
+  
   try {
-    // Connect to database first
-    await connectDB();
+    // Connect to database
+    const { client: mongoClient, db } = await connectToDatabase();
+    client = mongoClient;
     
     const { name, email, password } = req.body;
 
@@ -53,16 +62,21 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    // Use direct MongoDB operations instead of Mongoose methods
-    const db = mongoose.connection.db;
-    const usersCollection = db.collection('users');
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
 
-    // Check if user exists using native MongoDB driver
+    const usersCollection = db.collection('users');
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user exists - pure MongoDB operation
     const existingUser = await usersCollection.findOne(
-      { email: email.toLowerCase().trim() }, 
+      { email: normalizedEmail },
       { 
-        maxTimeMS: 10000,
-        projection: { _id: 1 }
+        projection: { _id: 1 },
+        maxTimeMS: 8000 
       }
     );
 
@@ -77,32 +91,38 @@ router.post('/register', async (req, res) => {
     // Create user document
     const userDoc = {
       name: name.trim(),
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       password: hashedPassword,
-      createdAt: new Date()
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
-    // Insert user using native MongoDB driver
-    const result = await usersCollection.insertOne(userDoc, {
-      maxTimeMS: 10000
+    // Insert user - pure MongoDB operation
+    const insertResult = await usersCollection.insertOne(userDoc, {
+      maxTimeMS: 8000
     });
 
-    if (!result.insertedId) {
+    if (!insertResult.acknowledged || !insertResult.insertedId) {
       throw new Error('Failed to create user');
     }
 
     // Create JWT token
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET not configured');
+    }
+
     const token = jwt.sign(
-      { userId: result.insertedId },
+      { userId: insertResult.insertedId.toString() },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
+    // Return success response
     res.status(201).json({
       message: 'User registered successfully',
       token,
       user: {
-        id: result.insertedId,
+        id: insertResult.insertedId.toString(),
         name: userDoc.name,
         email: userDoc.email
       }
@@ -111,39 +131,59 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
 
-    // Handle specific errors
+    // Handle MongoDB duplicate key error
     if (error.code === 11000) {
-      return res.status(400).json({ error: 'Email already exists' });
+      return res.status(400).json({ 
+        error: 'Email already exists',
+        code: 'DUPLICATE_EMAIL'
+      });
     }
 
+    // Handle timeout errors
     if (error.name === 'MongoTimeoutError' || 
-        error.message.includes('timeout') || 
-        error.message.includes('buffering')) {
+        error.message.includes('timeout') ||
+        error.message.includes('timed out')) {
       return res.status(503).json({
-        error: 'Database connection timeout. Please try again.',
+        error: 'Database operation timed out. Please try again.',
         code: 'DB_TIMEOUT'
       });
     }
 
-    if (error.message === 'MONGODB_URI not found') {
+    // Handle connection errors
+    if (error.name === 'MongoServerSelectionError' ||
+        error.name === 'MongoNetworkError') {
+      return res.status(503).json({
+        error: 'Database connection failed. Please try again.',
+        code: 'DB_CONNECTION_ERROR'
+      });
+    }
+
+    // Handle configuration errors
+    if (error.message.includes('MONGODB_URI') || 
+        error.message.includes('JWT_SECRET')) {
       return res.status(500).json({
         error: 'Server configuration error',
         code: 'CONFIG_ERROR'
       });
     }
 
+    // Generic error
     res.status(500).json({
       error: 'Registration failed. Please try again.',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// Login route with direct connection handling
+// Login route using pure MongoDB driver
 router.post('/login', async (req, res) => {
+  let client = null;
+  
   try {
-    // Connect to database first
-    await connectDB();
+    // Connect to database
+    const { client: mongoClient, db } = await connectToDatabase();
+    client = mongoClient;
     
     const { email, password } = req.body;
 
@@ -152,14 +192,13 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Use direct MongoDB operations
-    const db = mongoose.connection.db;
     const usersCollection = db.collection('users');
+    const normalizedEmail = email.toLowerCase().trim();
 
-    // Find user using native MongoDB driver
+    // Find user - pure MongoDB operation
     const user = await usersCollection.findOne(
-      { email: email.toLowerCase().trim() },
-      { maxTimeMS: 10000 }
+      { email: normalizedEmail },
+      { maxTimeMS: 8000 }
     );
 
     if (!user) {
@@ -173,17 +212,22 @@ router.post('/login', async (req, res) => {
     }
 
     // Create JWT token
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET not configured');
+    }
+
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id.toString() },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
+    // Return success response
     res.json({
       message: 'Login successful',
       token,
       user: {
-        id: user._id,
+        id: user._id.toString(),
         name: user.name,
         email: user.email
       }
@@ -192,18 +236,61 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
 
+    // Handle timeout errors
     if (error.name === 'MongoTimeoutError' || 
-        error.message.includes('timeout') || 
-        error.message.includes('buffering')) {
+        error.message.includes('timeout') ||
+        error.message.includes('timed out')) {
       return res.status(503).json({
-        error: 'Database connection timeout. Please try again.',
+        error: 'Database operation timed out. Please try again.',
         code: 'DB_TIMEOUT'
       });
     }
 
+    // Handle connection errors
+    if (error.name === 'MongoServerSelectionError' ||
+        error.name === 'MongoNetworkError') {
+      return res.status(503).json({
+        error: 'Database connection failed. Please try again.',
+        code: 'DB_CONNECTION_ERROR'
+      });
+    }
+
+    // Handle configuration errors
+    if (error.message.includes('JWT_SECRET')) {
+      return res.status(500).json({
+        error: 'Server configuration error',
+        code: 'CONFIG_ERROR'
+      });
+    }
+
+    // Generic error
     res.status(500).json({
       error: 'Login failed. Please try again.',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Health check for auth routes
+router.get('/health', async (req, res) => {
+  try {
+    const { db } = await connectToDatabase();
+    
+    // Test database connection
+    await db.admin().ping();
+    
+    res.json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
