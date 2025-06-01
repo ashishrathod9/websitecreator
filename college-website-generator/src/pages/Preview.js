@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar, Clock } from 'lucide-react';
+import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar } from 'lucide-react';
 
 const API_URL = 'https://websitecreator-4.onrender.com/api';
 
