@@ -36,6 +36,23 @@ app.get('/', (req, res) => {
   res.json({ message: 'College Website Generator API is running' });
 });
 
+// MongoDB connection options
+const mongooseOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 30000, // Increased from 5000 to 30000
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 30000, // Increased from 10000 to 30000
+  maxPoolSize: 10,
+  minPoolSize: 1,
+  maxIdleTimeMS: 60000,
+  retryWrites: true,
+  w: 'majority'
+};
+
+// Global connection variable
+let cachedDb = null;
+
 const connectDB = async () => {
   try {
     const uri = process.env.MONGODB_URI;
@@ -43,37 +60,24 @@ const connectDB = async () => {
       throw new Error('MONGODB_URI environment variable is not set');
     }
 
-    // Check if we're in a serverless environment
+    // If we have a cached connection, return it
+    if (cachedDb) {
+      return cachedDb;
+    }
+
+    // For serverless environments
     if (process.env.VERCEL) {
-      // For serverless environments, we need to handle connection differently
       if (mongoose.connection.readyState === 0) {
-        await mongoose.connect(uri, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-          serverSelectionTimeoutMS: 5000,
-          socketTimeoutMS: 45000,
-          retryWrites: true,
-          w: 'majority',
-          maxPoolSize: 10,
-          minPoolSize: 1,
-          maxIdleTimeMS: 60000,
-          connectTimeoutMS: 10000
-        });
+        await mongoose.connect(uri, mongooseOptions);
+        cachedDb = mongoose.connection;
       }
     } else {
       // For regular environments
-      await mongoose.connect(uri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
-        retryWrites: true,
-        w: 'majority'
-      });
+      await mongoose.connect(uri, mongooseOptions);
+      cachedDb = mongoose.connection;
     }
 
     console.log('Connected to MongoDB successfully');
-    console.log('MongoDB URI:', { uri: uri.split('@')[1] || uri });
     console.log('MongoDB connection state:', { state: mongoose.connection.readyState });
   } catch (err) {
     console.error('MongoDB connection error details:', {
