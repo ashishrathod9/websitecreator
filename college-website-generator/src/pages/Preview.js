@@ -18,7 +18,7 @@ const Preview = () => {
 
   useEffect(() => {
     fetchCollege();
-  }, [id]);
+  }, [id, fetchCollege]);
 
   const fetchCollege = async () => {
     try {
@@ -455,10 +455,10 @@ const Preview = () => {
             <div>
               <h3 className="text-xl font-bold mb-4">Quick Links</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Admissions</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Academics</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Contact</a></li>
+                <li><span className="text-gray-400 hover:text-white transition-colors">About Us</span></li>
+                <li><span className="text-gray-400 hover:text-white transition-colors">Admissions</span></li>
+                <li><span className="text-gray-400 hover:text-white transition-colors">Academics</span></li>
+                <li><span className="text-gray-400 hover:text-white transition-colors">Contact</span></li>
               </ul>
             </div>
             <div>
