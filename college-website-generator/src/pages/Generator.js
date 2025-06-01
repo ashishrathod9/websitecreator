@@ -465,3 +465,4 @@ const Generator = () => {
       images: prev.images.filter((_, i) => i !== index)
     }))
   }
+}
