@@ -84,5 +84,13 @@ app.use('*', (req, res) => {
   });
 });
 
-// Export for Vercel - no local server setup
+// Start server if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+// Export for Vercel/Render
 module.exports = app;

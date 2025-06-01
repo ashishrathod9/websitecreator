@@ -2,10 +2,14 @@ services:
   - type: web
     name: websitecreator-backend
     env: node
-    buildCommand: cd websitecreator/backend && npm install
-    startCommand: cd websitecreator/backend && npm start
+    buildCommand: npm install --production
+    startCommand: node server.js
     envVars:
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /health
+    autoDeploy: true
