@@ -1,40 +1,43 @@
+import axios from 'axios';
+
 const API_BASE_URL = 'https://websitecreator-3.onrender.com/api';
 
-const api = {
-  async generateWebsite(data) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate website');
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error generating website:', error);
-      throw error;
-    }
-  },
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
 
-  async getWebsite(id) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/websites/${id}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch website');
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching website:', error);
-      throw error;
+// Add request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export const generateWebsite = async (data) => {
+  try {
+    const response = await api.post('/colleges/generate', data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
+export const getWebsite = async (id) => {
+  try {
+    const response = await api.get(`/colleges/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
   }
 };
 

@@ -1,42 +1,44 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const authRoutes = require('./routes/auth');
-const collegeRoutes = require('./routes/colleges');
-
-dotenv.config();
+const path = require('path');
+require('dotenv').config();
 
 const app = express();
 
 // Middleware
+app.use(express.json());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: 'https://websitecreator-4.onrender.com',
   credentials: true
 }));
-app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/colleges', collegeRoutes);
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/colleges', require('./routes/colleges'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.json({ status: 'ok' });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'College Website Generator API is running' });
 });
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/college-website-generator')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/college-website-generator', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    success: false,
-    error: 'Something went wrong!' 
-  });
+  res.status(500).json({ error: 'Something went wrong!' });
 });
 
 const PORT = process.env.PORT || 5000;
