@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 
+const API_URL = 'https://websitecreator-3.onrender.com/api';
+
 const Profile = () => {
   const [colleges, setColleges] = useState([])
   const [loading, setLoading] = useState(true)
@@ -22,7 +24,7 @@ const Profile = () => {
           return
         }
 
-        const response = await axios.get("http://localhost:5000/api/colleges", {
+        const response = await axios.get(`${API_URL}/colleges`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         setColleges(response.data)
@@ -48,7 +50,7 @@ const Profile = () => {
 
     try {
       const token = localStorage.getItem("token")
-      await axios.delete(`http://localhost:5000/api/colleges/${collegeId}`, {
+      await axios.delete(`${API_URL}/colleges/${collegeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://websitecreator-3.onrender.com/api';
 
 export const login = async (email, password) => {
   try {
