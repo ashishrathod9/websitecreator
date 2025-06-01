@@ -2,23 +2,24 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import config from '../config';
 
-const API_URL = config.API_URL;
+const API_URL = config.API_BASE_URL;
 
 // Configure axios defaults
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
 export const login = async (email, password) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/login`, 
-      { email, password },
-      { 
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const response = await api.post('/auth/login', { email, password });
     const { token } = response.data;
     localStorage.setItem('token', token);
     return response.data;
@@ -29,15 +30,7 @@ export const login = async (email, password) => {
 
 export const register = async (userData) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/register`, 
-      userData,
-      { 
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const response = await api.post('/auth/register', userData);
     const { token } = response.data;
     localStorage.setItem('token', token);
     return response.data;
