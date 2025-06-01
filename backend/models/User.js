@@ -54,6 +54,7 @@ userSchema.methods.toJSON = function() {
   return user;
 };
 
-const User = mongoose.model('User', userSchema);
+// Only create the model if it hasn't been created yet
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 module.exports = User; 

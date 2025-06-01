@@ -1,56 +1,13 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { MongoClient } = require('mongodb');
+const User = require('../models/User');
 
 const router = express.Router();
 
-// MongoDB client instance
-let cachedClient = null;
-let cachedDb = null;
-
-const connectToDatabase = async () => {
-  if (cachedClient && cachedDb) {
-    return { client: cachedClient, db: cachedDb };
-  }
-
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error('MONGODB_URI environment variable is not set');
-  }
-
-  const client = new MongoClient(uri, {
-    maxPoolSize: 5,
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 15000,
-    connectTimeoutMS: 10000,
-    maxIdleTimeMS: 30000,
-  });
-
-  try {
-    await client.connect();
-    const db = client.db(); // Uses database from connection string
-    
-    cachedClient = client;
-    cachedDb = db;
-    
-    console.log('Connected to MongoDB successfully');
-    return { client, db };
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
-  }
-};
-
-// Register route using pure MongoDB driver
+// Register route using Mongoose
 router.post('/register', async (req, res) => {
-  let client = null;
-  
   try {
-    // Connect to database
-    const { client: mongoClient, db } = await connectToDatabase();
-    client = mongoClient;
-    
     const { name, email, password } = req.body;
 
     // Validate input
@@ -68,18 +25,10 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    const usersCollection = db.collection('users');
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if user exists - pure MongoDB operation
-    const existingUser = await usersCollection.findOne(
-      { email: normalizedEmail },
-      { 
-        projection: { _id: 1 },
-        maxTimeMS: 8000 
-      }
-    );
-
+    // Check if user exists
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
@@ -88,23 +37,14 @@ router.post('/register', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user document
-    const userDoc = {
+    // Create user
+    const user = new User({
       name: name.trim(),
       email: normalizedEmail,
-      password: hashedPassword,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    // Insert user - pure MongoDB operation
-    const insertResult = await usersCollection.insertOne(userDoc, {
-      maxTimeMS: 8000
+      password: hashedPassword
     });
 
-    if (!insertResult.acknowledged || !insertResult.insertedId) {
-      throw new Error('Failed to create user');
-    }
+    await user.save();
 
     // Create JWT token
     if (!process.env.JWT_SECRET) {
@@ -112,7 +52,7 @@ router.post('/register', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: insertResult.insertedId.toString() },
+      { userId: user._id.toString() },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -122,9 +62,9 @@ router.post('/register', async (req, res) => {
       message: 'User registered successfully',
       token,
       user: {
-        id: insertResult.insertedId.toString(),
-        name: userDoc.name,
-        email: userDoc.email
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email
       }
     });
 
@@ -140,9 +80,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Handle timeout errors
-    if (error.name === 'MongoTimeoutError' || 
-        error.message.includes('timeout') ||
-        error.message.includes('timed out')) {
+    if (error.name === 'MongooseError' && error.message.includes('buffering timed out')) {
       return res.status(503).json({
         error: 'Database operation timed out. Please try again.',
         code: 'DB_TIMEOUT'
@@ -150,8 +88,8 @@ router.post('/register', async (req, res) => {
     }
 
     // Handle connection errors
-    if (error.name === 'MongoServerSelectionError' ||
-        error.name === 'MongoNetworkError') {
+    if (error.name === 'MongooseServerSelectionError' ||
+        error.name === 'MongooseNetworkError') {
       return res.status(503).json({
         error: 'Database connection failed. Please try again.',
         code: 'DB_CONNECTION_ERROR'
@@ -159,8 +97,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Handle configuration errors
-    if (error.message.includes('MONGODB_URI') || 
-        error.message.includes('JWT_SECRET')) {
+    if (error.message.includes('JWT_SECRET')) {
       return res.status(500).json({
         error: 'Server configuration error',
         code: 'CONFIG_ERROR'
@@ -176,15 +113,9 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login route using pure MongoDB driver
+// Login route using Mongoose
 router.post('/login', async (req, res) => {
-  let client = null;
-  
   try {
-    // Connect to database
-    const { client: mongoClient, db } = await connectToDatabase();
-    client = mongoClient;
-    
     const { email, password } = req.body;
 
     // Validate input
@@ -192,15 +123,10 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const usersCollection = db.collection('users');
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Find user - pure MongoDB operation
-    const user = await usersCollection.findOne(
-      { email: normalizedEmail },
-      { maxTimeMS: 8000 }
-    );
-
+    // Find user
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -237,9 +163,7 @@ router.post('/login', async (req, res) => {
     console.error('Login error:', error);
 
     // Handle timeout errors
-    if (error.name === 'MongoTimeoutError' || 
-        error.message.includes('timeout') ||
-        error.message.includes('timed out')) {
+    if (error.name === 'MongooseError' && error.message.includes('buffering timed out')) {
       return res.status(503).json({
         error: 'Database operation timed out. Please try again.',
         code: 'DB_TIMEOUT'
@@ -247,8 +171,8 @@ router.post('/login', async (req, res) => {
     }
 
     // Handle connection errors
-    if (error.name === 'MongoServerSelectionError' ||
-        error.name === 'MongoNetworkError') {
+    if (error.name === 'MongooseServerSelectionError' ||
+        error.name === 'MongooseNetworkError') {
       return res.status(503).json({
         error: 'Database connection failed. Please try again.',
         code: 'DB_CONNECTION_ERROR'
