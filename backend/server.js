@@ -1,7 +1,6 @@
 const express = require('express');
-const cors = require('cors');
-const path = require('path');
 const mongoose = require('mongoose');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
@@ -9,58 +8,58 @@ const app = express();
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 
-// CORS
+// CORS configuration
 app.use(cors({
-  origin: [
-    'https://websitecreator-ttdr.vercel.app',
-    'https://websitecreator-cgzt.vercel.app',
-    'https://websitecreator-4.onrender.com'
-  ],
+  origin: ['https://websitecreator-ttdr.vercel.app', 'https://websitecreator-cgzt.vercel.app', 'https://websitecreator-4.onrender.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
-// MongoDB options (fixed: removed unsupported bufferMaxEntries)
-const mongooseOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 10000,
-  socketTimeoutMS: 15000,
-  connectTimeoutMS: 10000,
-  maxPoolSize: 5,
-  minPoolSize: 0,
-  bufferCommands: false
-  // ✅ bufferMaxEntries removed
-};
+app.options('*', cors());
 
-// MongoDB connection function
-const connectDB = async () => {
-  try {
-    const uri = process.env.MONGODB_URI;
-    if (!uri) throw new Error('MONGODB_URI not set in .env');
+// Remove the connection middleware completely for Vercel
+// Each route will handle its own connection
 
-    await mongoose.connect(uri, mongooseOptions);
-    console.log('✅ MongoDB connected');
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error.message);
-    process.exit(1);
-  }
-};
-
-// Routes (only use if these files exist)
+// Routes - direct mounting without middleware
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/colleges', require('./routes/colleges'));
 
-// Health check
+// Health check - simplified
 app.get('/health', (req, res) => {
-  const status = ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState];
-  res.json({ db: status });
-});
-
-// Start server after DB connects
-const PORT = process.env.PORT || 5000;
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+  res.json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
   });
 });
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'College Website Generator API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Simple error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    error: 'Something went wrong!',
+    code: 'INTERNAL_ERROR'
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Route not found',
+    path: req.originalUrl
+  });
+});
+
+// Export for Vercel - no local server setup
+module.exports = app;
