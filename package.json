@@ -1,0 +1,13 @@
+{
+  "name": "websitecreator",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install-deps": "cd college-website-generator && npm install",
+    "build": "cd college-website-generator && npm run build",
+    "vercel-build": "npm run install-deps && npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
