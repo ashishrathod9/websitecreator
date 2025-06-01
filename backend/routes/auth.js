@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
+const mongoose = require('mongoose');
 
 // CORS middleware for auth routes
 router.use((req, res, next) => {
@@ -35,7 +36,8 @@ router.post('/register', [
     console.log('Registration request received:', { 
       name: req.body.name,
       email: req.body.email,
-      hasPassword: !!req.body.password
+      hasPassword: !!req.body.password,
+      headers: req.headers
     });
 
     // Check for validation errors
@@ -51,12 +53,25 @@ router.post('/register', [
     const { name, email, password } = req.body;
     
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.log('User already exists:', email);
-      return res.status(400).json({ 
+    try {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        console.log('User already exists:', email);
+        return res.status(400).json({ 
+          success: false,
+          error: 'Email already registered' 
+        });
+      }
+    } catch (findError) {
+      console.error('Error checking existing user:', {
+        error: findError.message,
+        code: findError.code,
+        name: findError.name,
+        stack: findError.stack
+      });
+      return res.status(500).json({
         success: false,
-        error: 'Email already registered' 
+        error: 'Error checking user existence'
       });
     }
 
@@ -71,7 +86,8 @@ router.post('/register', [
         error: saveError.message,
         code: saveError.code,
         name: saveError.name,
-        stack: saveError.stack
+        stack: saveError.stack,
+        validationErrors: saveError.errors
       });
       return res.status(500).json({
         success: false,
@@ -117,7 +133,8 @@ router.post('/register', [
       error: error.message,
       name: error.name,
       code: error.code,
-      stack: error.stack
+      stack: error.stack,
+      mongooseState: mongoose.connection.readyState
     });
     
     // Check if it's a MongoDB connection error
