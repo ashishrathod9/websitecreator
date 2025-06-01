@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar, Clock } from 'lucide-react';
 
-const API_URL = 'https://websitecreator-3.onrender.com/api';
+const API_URL = 'https://websitecreator-4.onrender.com/api';
 
 const Preview = () => {
   const [college, setCollege] = useState(null);

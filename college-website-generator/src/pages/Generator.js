@@ -1,53 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import {
-  Plus,
-  Trash2,
-  Eye,
-  Save,
-  Palette,
-  Settings,
-  Building,
-  Users,
-  BookOpen,
-  Calendar,
-  Award,
-  MapPin,
-  Mail,
-  ChevronDown,
-  ChevronUp,
-  Layout,
-  Image as ImageIcon,
-  Newspaper,
-  GraduationCap,
-  Microscope,
-  Globe,
-  Map,
-  Laptop,
-  Search,
-  FileText,
-  Phone,
-  Clock,
-  Globe2,
-  Video,
-  BookMarked,
-  Library,
-  GraduationCap as GraduationCap2,
-  Users as Users2,
-  Building2,
-  Computer,
-  Presentation,
-  TestTube,
-  BookOpen as BookOpen2,
-  Calendar as Calendar2,
-  Newspaper as Newspaper2,
-} from "lucide-react"
-import { useNavigate } from "react-router-dom"
-import ApiService from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import WebsiteGenerator from '../components/WebsiteGenerator';
 
-const API_URL = 'https://websitecreator-3.onrender.com/api';
+const API_URL = 'https://websitecreator-4.onrender.com/api';
 
 // Remove jwt-decode import and add a utility function to decode JWT
 const decodeToken = (token) => {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as jwtDecode from 'jwt-decode';
 
-const API_URL = 'https://websitecreator-3.onrender.com/api';
+const API_URL = 'https://websitecreator-4.onrender.com/api';
 
 export const login = async (email, password) => {
   try {
