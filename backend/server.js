@@ -9,7 +9,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: ['https://websitecreator-ttdr.vercel.app', 'http://localhost:3000'],
+  origin: ['https://websitecreator-ttdr.vercel.app', 'https://website-creator-backend.onrender.com'],
   credentials: true
 }));
 

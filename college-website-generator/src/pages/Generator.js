@@ -27,7 +27,7 @@ import {
   Eye
 } from 'lucide-react';
 
-const API_URL = 'https://websitecreator-4.onrender.com/api';
+const API_URL = 'https://websitecreator-cgzt.vercel.app/api';
 
 // Remove jwt-decode import and add a utility function to decode JWT
 const decodeToken = (token) => {

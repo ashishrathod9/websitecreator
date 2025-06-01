@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://websitecreator-4.onrender.com/api';
+const API_BASE_URL = 'https://websitecreator-cgzt.vercel.app/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
