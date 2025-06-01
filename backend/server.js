@@ -8,8 +8,12 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+
+// CORS configuration
 app.use(cors({
-  origin: ['https://websitecreator-ttdr.vercel.app', 'https://website-creator-backend.onrender.com'],
+  origin: 'https://websitecreator-ttdr.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
