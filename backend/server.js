@@ -5,6 +5,29 @@ require('dotenv').config();
 
 const app = express();
 
+// MongoDB connection configuration
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
+      socketTimeoutMS: 45000, // Increase socket timeout
+      connectTimeoutMS: 30000, // Increase connection timeout
+      maxPoolSize: 10, // Increase connection pool size
+      minPoolSize: 5, // Maintain minimum connections
+      retryWrites: true,
+      retryReads: true,
+    });
+    
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1); // Exit with failure
+  }
+};
+
+// Connect to MongoDB
+connectDB();
+
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 
