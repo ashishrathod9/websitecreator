@@ -1,5 +1,11 @@
 # College Website Generator
 
+A modern web application for generating college websites.
+
+## Live Demo
+
+Open [https://websitecreator-12.onrender.com](https://websitecreator-12.onrender.com) to view it in your browser.
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts

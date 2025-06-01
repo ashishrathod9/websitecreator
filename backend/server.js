@@ -33,7 +33,12 @@ app.use(express.json({ limit: '10mb' }));
 
 // CORS configuration
 app.use(cors({
-  origin: ['https://websitecreator-ttdr.vercel.app', 'https://websitecreator-cgzt.vercel.app', 'https://websitecreator-4.onrender.com'],
+  origin: [
+    'https://websitecreator-ttdr.vercel.app',
+    'https://websitecreator-cgzt.vercel.app',
+    'https://websitecreator-4.onrender.com',
+    'https://websitecreator-12.onrender.com'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
@@ -84,13 +89,5 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server if not in test environment
-if (process.env.NODE_ENV !== 'test') {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
-
-// Export for Vercel/Render
+// Export for Vercel - no local server setup
 module.exports = app;
