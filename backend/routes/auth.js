@@ -2,45 +2,20 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // Adjust path as needed
-const mongoose = require('mongoose');
-
 const router = express.Router();
-
-// Helper function to handle database operations with retry
-const withRetry = async (operation, retries = 3) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await operation();
-    } catch (error) {
-      console.error(`Attempt ${i + 1} failed:`, error.message);
-      
-      if (i === retries - 1) throw error;
-      
-      // Wait before retry (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
-    }
-  }
-};
 
 // Register route
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Validation
+    // Validate input
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
-
-    // Check if user exists with retry logic
-    const existingUser = await withRetry(async () => {
-      return await User.findOne({ email }).lean().maxTimeMS(5000);
-    });
-
+    // Check if user already exists with timeout
+    const existingUser = await User.findOne({ email }).maxTimeMS(10000);
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
@@ -49,24 +24,24 @@ router.post('/register', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user with retry logic
-    const user = await withRetry(async () => {
-      const newUser = new User({
-        name,
-        email,
-        password: hashedPassword
-      });
-      return await newUser.save();
+    // Create user with timeout
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword
     });
 
-    // Generate JWT token
+    await user.save();
+
+    // Create JWT token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback_secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     res.status(201).json({
+      message: 'User registered successfully',
       token,
       user: {
         id: user._id,
@@ -78,17 +53,27 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     
-    if (error.name === 'MongooseError' || error.name === 'MongoError') {
+    // Handle specific MongoDB errors
+    if (error.name === 'MongoTimeoutError' || error.name === 'MongooseError') {
       return res.status(503).json({ 
-        error: 'Database connection issue. Please try again.' 
+        error: 'Database connection timeout. Please try again.' 
       });
     }
     
     if (error.code === 11000) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res.status(400).json({ error: 'Email already exists' });
     }
     
-    res.status(500).json({ error: 'Server error during registration' });
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        error: 'Validation error', 
+        details: error.message 
+      });
+    }
+
+    res.status(500).json({ 
+      error: 'Registration failed. Please try again.' 
+    });
   }
 });
 
@@ -97,16 +82,13 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
+    // Validate input
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Find user with retry logic
-    const user = await withRetry(async () => {
-      return await User.findOne({ email }).maxTimeMS(5000);
-    });
-
+    // Find user with timeout
+    const user = await User.findOne({ email }).maxTimeMS(10000);
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -117,14 +99,15 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Create JWT token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback_secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     res.json({
+      message: 'Login successful',
       token,
       user: {
         id: user._id,
@@ -136,51 +119,16 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     
-    if (error.name === 'MongooseError' || error.name === 'MongoError') {
+    // Handle specific MongoDB errors
+    if (error.name === 'MongoTimeoutError' || error.name === 'MongooseError') {
       return res.status(503).json({ 
-        error: 'Database connection issue. Please try again.' 
+        error: 'Database connection timeout. Please try again.' 
       });
     }
-    
-    res.status(500).json({ error: 'Server error during login' });
-  }
-});
 
-// Verify token route
-router.get('/verify', async (req, res) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    
-    const user = await withRetry(async () => {
-      return await User.findById(decoded.userId).select('-password').lean().maxTimeMS(5000);
+    res.status(500).json({ 
+      error: 'Login failed. Please try again.' 
     });
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
-    res.json({ user });
-
-  } catch (error) {
-    console.error('Token verification error:', error);
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    
-    if (error.name === 'MongooseError' || error.name === 'MongoError') {
-      return res.status(503).json({ 
-        error: 'Database connection issue. Please try again.' 
-      });
-    }
-    
-    res.status(500).json({ error: 'Server error during verification' });
   }
 });
 

@@ -22,87 +22,86 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-// Improved MongoDB connection options for Vercel
+// MongoDB connection options
 const mongooseOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000, // Reduced timeout for faster failure detection
+  serverSelectionTimeoutMS: 30000,
   socketTimeoutMS: 45000,
-  connectTimeoutMS: 10000,
+  connectTimeoutMS: 30000,
   maxPoolSize: 10,
   minPoolSize: 1,
-  maxIdleTimeMS: 30000, // Reduced idle time
+  maxIdleTimeMS: 60000,
   retryWrites: true,
   w: 'majority',
   bufferCommands: false, // Disable mongoose buffering
-  bufferMaxEntries: 0 // Disable mongoose buffering
+  bufferMaxEntries: 0, // Disable mongoose buffering
 };
 
 // Global connection variable
-let cachedDb = null;
+let isConnected = false;
 
 const connectDB = async () => {
+  if (isConnected) {
+    console.log('Using existing MongoDB connection');
+    return;
+  }
+
   try {
     const uri = process.env.MONGODB_URI;
     if (!uri) {
       throw new Error('MONGODB_URI environment variable is not set');
     }
 
-    // Check if we already have a connection
-    if (cachedDb && mongoose.connection.readyState === 1) {
-      console.log('Using cached MongoDB connection');
-      return cachedDb;
-    }
-
-    // Close existing connection if it's in a bad state
-    if (mongoose.connection.readyState === 2 || mongoose.connection.readyState === 3) {
-      await mongoose.connection.close();
-    }
-
     console.log('Connecting to MongoDB...');
-    await mongoose.connect(uri, mongooseOptions);
     
-    cachedDb = mongoose.connection;
+    // Close any existing connections
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+
+    const db = await mongoose.connect(uri, mongooseOptions);
+    
+    isConnected = db.connections[0].readyState === 1;
     console.log('Connected to MongoDB successfully');
-    console.log('MongoDB connection state:', mongoose.connection.readyState);
+    console.log('Connection state:', mongoose.connection.readyState);
     
-    return cachedDb;
   } catch (err) {
     console.error('MongoDB connection error:', err);
-    cachedDb = null;
+    isConnected = false;
     throw err;
   }
 };
 
 // Connection event listeners
+mongoose.connection.on('connected', () => {
+  console.log('Mongoose connected to MongoDB');
+  isConnected = true;
+});
+
 mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
-  cachedDb = null;
+  console.error('Mongoose connection error:', err);
+  isConnected = false;
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected');
-  cachedDb = null;
+  console.log('Mongoose disconnected');
+  isConnected = false;
 });
 
-mongoose.connection.on('reconnected', () => {
-  console.log('MongoDB reconnected');
-  cachedDb = mongoose.connection;
-});
-
-// Middleware to ensure connection before handling requests
+// Middleware to ensure database connection before each request
 const ensureConnection = async (req, res, next) => {
   try {
-    if (!cachedDb || mongoose.connection.readyState !== 1) {
-      console.log('Reconnecting to MongoDB...');
+    if (!isConnected || mongoose.connection.readyState !== 1) {
+      console.log('Database not connected, attempting to connect...');
       await connectDB();
     }
     next();
   } catch (error) {
-    console.error('Database connection failed:', error);
-    res.status(503).json({ 
+    console.error('Failed to connect to database:', error);
+    return res.status(500).json({ 
       error: 'Database connection failed', 
-      message: 'Please try again in a moment' 
+      details: error.message 
     });
   }
 };
@@ -117,25 +116,16 @@ app.use('/api/colleges', require('./routes/colleges'));
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
-    const dbState = mongoose.connection.readyState;
-    const states = {
-      0: 'disconnected',
-      1: 'connected',
-      2: 'connecting',
-      3: 'disconnecting'
-    };
-    
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
     res.json({ 
-      status: 'ok',
-      database: {
-        state: states[dbState],
-        ready: dbState === 1
-      }
+      status: 'ok', 
+      database: dbStatus,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     res.status(500).json({ 
-      status: 'error',
-      database: { state: 'error', ready: false }
+      status: 'error', 
+      error: error.message 
     });
   }
 });
@@ -145,43 +135,35 @@ app.get('/', (req, res) => {
   res.json({ message: 'College Website Generator API is running' });
 });
 
-// Initialize connection
-connectDB().catch(err => {
-  console.error('Failed to connect to MongoDB on startup:', err);
-  // Don't exit process in serverless environment
-  if (!process.env.VERCEL) {
+// Initialize connection for non-serverless environments
+if (!process.env.VERCEL) {
+  connectDB().catch(err => {
+    console.error('Failed to connect to MongoDB:', err);
     process.exit(1);
-  }
-});
+  });
+}
 
 // Handle serverless function cleanup
 if (process.env.VERCEL) {
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received. Closing MongoDB connection...');
-    if (mongoose.connection.readyState === 1) {
-      await mongoose.connection.close();
-    }
+    await mongoose.connection.close();
+    isConnected = false;
     process.exit(0);
   });
 }
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error stack:', err.stack);
-  
-  // Handle MongoDB specific errors
-  if (err.name === 'MongooseError' || err.name === 'MongoError') {
-    return res.status(503).json({ 
-      error: 'Database connection issue', 
-      message: 'Please try again in a moment' 
-    });
-  }
-  
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('Error:', err);
+  res.status(500).json({ 
+    error: 'Something went wrong!', 
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 // For local development
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
