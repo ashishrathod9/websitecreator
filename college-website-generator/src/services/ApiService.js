@@ -1,6 +1,7 @@
 import axios from 'axios';
+import config from '../config';
 
-const API_URL = 'https://websitecreator-cgzt.vercel.app/api';
+const API_URL = config.API_URL;
 
 const ApiService = {
   async getWebsiteData() {

@@ -11,7 +11,7 @@ app.use(express.json());
 
 // CORS configuration
 app.use(cors({
-  origin: 'https://websitecreator-ttdr.vercel.app',
+  origin: ['https://websitecreator-ttdr.vercel.app', 'https://websitecreator-cgzt.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
@@ -39,10 +39,24 @@ app.get('/', (req, res) => {
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/college-website-generator', {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+.then(() => {
+  console.log('Connected to MongoDB');
+  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/college-website-generator';
+  console.log('MongoDB URI:', uri.split('@')[1] || uri);
+})
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+  if (err.name === 'MongoServerSelectionError') {
+    console.error('Could not connect to MongoDB server. Please check if the server is running and accessible.');
+  } else if (err.name === 'MongoParseError') {
+    console.error('Invalid MongoDB connection string. Please check your MONGODB_URI environment variable.');
+  }
+  process.exit(1);
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

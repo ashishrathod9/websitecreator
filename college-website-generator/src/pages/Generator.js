@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import WebsiteGenerator from '../components/WebsiteGenerator';
 import ApiService from '../services/ApiService';
+import config from '../config';
 import {
   Newspaper,
   Calendar,
@@ -27,7 +28,7 @@ import {
   Eye
 } from 'lucide-react';
 
-const API_URL = 'https://websitecreator-cgzt.vercel.app/api';
+const API_URL = config.API_URL;
 
 // Remove jwt-decode import and add a utility function to decode JWT
 const decodeToken = (token) => {

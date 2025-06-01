@@ -7,7 +7,13 @@ const { body, validationResult } = require('express-validator');
 
 // CORS middleware for auth routes
 router.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://websitecreator-ttdr.vercel.app');
+  const allowedOrigins = ['https://websitecreator-ttdr.vercel.app', 'https://websitecreator-cgzt.vercel.app'];
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -26,9 +32,16 @@ router.post('/register', [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
 ], async (req, res) => {
   try {
+    console.log('Registration request received:', { 
+      name: req.body.name,
+      email: req.body.email,
+      hasPassword: !!req.body.password
+    });
+
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ 
         success: false,
         errors: errors.array() 
@@ -40,6 +53,7 @@ router.post('/register', [
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('User already exists:', email);
       return res.status(400).json({ 
         success: false,
         error: 'Email already registered' 
@@ -48,21 +62,50 @@ router.post('/register', [
 
     // Create new user
     const user = new User({ name, email, password });
-    await user.save();
+    
+    try {
+      await user.save();
+      console.log('User saved successfully:', user._id);
+    } catch (saveError) {
+      console.error('Error saving user:', {
+        error: saveError.message,
+        code: saveError.code,
+        name: saveError.name,
+        stack: saveError.stack
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Error creating user account'
+      });
+    }
 
     // Generate token
-    const token = jwt.sign(
-      { 
-        userId: user._id,
-        name: user.name,
-        email: user.email
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
+    let token;
+    try {
+      token = jwt.sign(
+        { 
+          userId: user._id,
+          name: user.name,
+          email: user.email
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '7d' }
+      );
+      console.log('Token generated successfully');
+    } catch (tokenError) {
+      console.error('Error generating token:', {
+        error: tokenError.message,
+        stack: tokenError.stack
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Error generating authentication token'
+      });
+    }
 
     // Remove password from response
     const userResponse = user.toJSON();
+    console.log('Registration successful for user:', user._id);
 
     res.status(201).json({
       success: true,
@@ -70,10 +113,30 @@ router.post('/register', [
       user: userResponse
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Registration error:', {
+      error: error.message,
+      name: error.name,
+      code: error.code,
+      stack: error.stack
+    });
+    
+    // Check if it's a MongoDB connection error
+    if (error.name === 'MongoServerError') {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Database connection error. Please try again later.'
+      });
+    }
+    // Check if it's a validation error
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user data provided'
+      });
+    }
     res.status(500).json({ 
       success: false,
-      error: 'Server error during registration' 
+      error: 'Server error during registration'
     });
   }
 });
