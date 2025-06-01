@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: websitecreator-backend
+    env: node
+    buildCommand: cd websitecreator/backend && npm install
+    startCommand: cd websitecreator/backend && npm start
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
