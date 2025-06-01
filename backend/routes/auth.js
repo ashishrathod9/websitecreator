@@ -5,6 +5,29 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
+
+// Create logs directory if it doesn't exist
+const logsDir = path.join(__dirname, '..', 'logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir);
+}
+
+// Create a write stream for logging
+const logStream = fs.createWriteStream(path.join(logsDir, 'auth.log'), { flags: 'a' });
+
+// Custom logging function
+const log = (message, data = {}) => {
+  const timestamp = new Date().toISOString();
+  const logMessage = JSON.stringify({
+    timestamp,
+    message,
+    ...data
+  });
+  console.log(logMessage);
+  logStream.write(logMessage + '\n');
+};
 
 // CORS middleware for auth routes
 router.use((req, res, next) => {
@@ -33,7 +56,7 @@ router.post('/register', [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
 ], async (req, res) => {
   try {
-    console.log('Registration request received:', { 
+    log('Registration request received:', { 
       name: req.body.name,
       email: req.body.email,
       hasPassword: !!req.body.password,
@@ -43,7 +66,7 @@ router.post('/register', [
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('Validation errors:', errors.array());
+      log('Validation errors:', { errors: errors.array() });
       return res.status(400).json({ 
         success: false,
         errors: errors.array() 
@@ -56,14 +79,14 @@ router.post('/register', [
     try {
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        console.log('User already exists:', email);
+        log('User already exists:', { email });
         return res.status(400).json({ 
           success: false,
           error: 'Email already registered' 
         });
       }
     } catch (findError) {
-      console.error('Error checking existing user:', {
+      log('Error checking existing user:', {
         error: findError.message,
         code: findError.code,
         name: findError.name,
@@ -80,9 +103,9 @@ router.post('/register', [
     
     try {
       await user.save();
-      console.log('User saved successfully:', user._id);
+      log('User saved successfully:', { userId: user._id });
     } catch (saveError) {
-      console.error('Error saving user:', {
+      log('Error saving user:', {
         error: saveError.message,
         code: saveError.code,
         name: saveError.name,
@@ -107,9 +130,9 @@ router.post('/register', [
         process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '7d' }
       );
-      console.log('Token generated successfully');
+      log('Token generated successfully');
     } catch (tokenError) {
-      console.error('Error generating token:', {
+      log('Error generating token:', {
         error: tokenError.message,
         stack: tokenError.stack
       });
@@ -121,7 +144,7 @@ router.post('/register', [
 
     // Remove password from response
     const userResponse = user.toJSON();
-    console.log('Registration successful for user:', user._id);
+    log('Registration successful for user:', { userId: user._id });
 
     res.status(201).json({
       success: true,
@@ -129,7 +152,7 @@ router.post('/register', [
       user: userResponse
     });
   } catch (error) {
-    console.error('Registration error:', {
+    log('Registration error:', {
       error: error.message,
       name: error.name,
       code: error.code,

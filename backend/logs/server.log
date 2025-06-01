@@ -1,0 +1,17 @@
+{"timestamp":"2025-06-01T14:48:59.943Z","message":"Server is running on port 5000"}
+{"timestamp":"2025-06-01T14:49:00.703Z","message":"Connected to MongoDB successfully"}
+{"timestamp":"2025-06-01T14:49:00.704Z","message":"MongoDB URI:","uri":"cluster1.vki9pld.mongodb.net/collage7"}
+{"timestamp":"2025-06-01T14:49:00.705Z","message":"MongoDB connection state:","state":1}
+{"timestamp":"2025-06-01T14:49:20.295Z","message":"Server is running on port 5000"}
+{"timestamp":"2025-06-01T14:49:20.984Z","message":"Connected to MongoDB successfully"}
+{"timestamp":"2025-06-01T14:49:20.984Z","message":"MongoDB URI:","uri":"cluster1.vki9pld.mongodb.net/collage7"}
+{"timestamp":"2025-06-01T14:49:20.985Z","message":"MongoDB connection state:","state":1}
+{"timestamp":"2025-06-01T14:49:22.480Z","message":"Server is running on port 5000"}
+{"timestamp":"2025-06-01T14:49:23.189Z","message":"Connected to MongoDB successfully"}
+{"timestamp":"2025-06-01T14:49:23.190Z","message":"MongoDB URI:","uri":"cluster1.vki9pld.mongodb.net/collage7"}
+{"timestamp":"2025-06-01T14:49:23.190Z","message":"MongoDB connection state:","state":1}
+{"timestamp":"2025-06-01T14:52:04.387Z","message":"Server is running on port 5000"}
+{"timestamp":"2025-06-01T14:52:05.506Z","message":"Server is running on port 5000"}
+{"timestamp":"2025-06-01T14:52:06.385Z","message":"Connected to MongoDB successfully"}
+{"timestamp":"2025-06-01T14:52:06.386Z","message":"MongoDB URI:","uri":"cluster1.vki9pld.mongodb.net/collage7"}
+{"timestamp":"2025-06-01T14:52:06.387Z","message":"MongoDB connection state:","state":1}

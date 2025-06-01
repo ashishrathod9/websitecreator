@@ -36,43 +36,76 @@ app.get('/', (req, res) => {
   res.json({ message: 'College Website Generator API is running' });
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/college-website-generator', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-})
-.then(() => {
-  console.log('Connected to MongoDB successfully');
-  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/college-website-generator';
-  console.log('MongoDB URI:', uri.split('@')[1] || uri);
-  console.log('MongoDB connection state:', mongoose.connection.readyState);
-})
-.catch(err => {
-  console.error('MongoDB connection error details:', {
-    name: err.name,
-    message: err.message,
-    code: err.code,
-    stack: err.stack
-  });
-  
-  if (err.name === 'MongoServerSelectionError') {
-    console.error('Could not connect to MongoDB server. Please check if:');
-    console.error('1. The server is running and accessible');
-    console.error('2. The connection string is correct');
-    console.error('3. Network connectivity is available');
-  } else if (err.name === 'MongoParseError') {
-    console.error('Invalid MongoDB connection string. Please check your MONGODB_URI environment variable.');
-  } else if (err.name === 'MongoNetworkError') {
-    console.error('Network error while connecting to MongoDB. Please check your network connection.');
+const connectDB = async () => {
+  try {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('MONGODB_URI environment variable is not set');
+    }
+
+    // Check if we're in a serverless environment
+    if (process.env.VERCEL) {
+      // For serverless environments, we need to handle connection differently
+      if (mongoose.connection.readyState === 0) {
+        await mongoose.connect(uri, {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+          serverSelectionTimeoutMS: 5000,
+          socketTimeoutMS: 45000,
+          retryWrites: true,
+          w: 'majority',
+          maxPoolSize: 10,
+          minPoolSize: 1,
+          maxIdleTimeMS: 60000,
+          connectTimeoutMS: 10000
+        });
+      }
+    } else {
+      // For regular environments
+      await mongoose.connect(uri, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        retryWrites: true,
+        w: 'majority'
+      });
+    }
+
+    console.log('Connected to MongoDB successfully');
+    console.log('MongoDB URI:', { uri: uri.split('@')[1] || uri });
+    console.log('MongoDB connection state:', { state: mongoose.connection.readyState });
+  } catch (err) {
+    console.error('MongoDB connection error details:', {
+      name: err.name,
+      message: err.message,
+      code: err.code,
+      stack: err.stack
+    });
+    
+    if (err.name === 'MongoServerSelectionError') {
+      console.error('Could not connect to MongoDB server. Please check if:', {
+        checks: [
+          'The server is running and accessible',
+          'The connection string is correct',
+          'Network connectivity is available'
+        ]
+      });
+    } else if (err.name === 'MongoParseError') {
+      console.error('Invalid MongoDB connection string. Please check your MONGODB_URI environment variable.');
+    } else if (err.name === 'MongoNetworkError') {
+      console.error('Network error while connecting to MongoDB. Please check your network connection.');
+    }
+    process.exit(1);
   }
-  process.exit(1);
-});
+};
+
+// Call connectDB
+connectDB();
 
 // Add connection event listeners
 mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
+  console.error('MongoDB connection error:', { error: err.message });
 });
 
 mongoose.connection.on('disconnected', () => {
@@ -82,6 +115,15 @@ mongoose.connection.on('disconnected', () => {
 mongoose.connection.on('reconnected', () => {
   console.log('MongoDB reconnected');
 });
+
+// Handle serverless function cleanup
+if (process.env.VERCEL) {
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received. Closing MongoDB connection...');
+    await mongoose.connection.close();
+    process.exit(0);
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
