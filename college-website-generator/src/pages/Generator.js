@@ -47,6 +47,8 @@ import { useNavigate } from "react-router-dom"
 import ApiService from '../services/api';
 import axios from 'axios';
 
+const API_URL = 'https://websitecreator-3.onrender.com/api';
+
 // Remove jwt-decode import and add a utility function to decode JWT
 const decodeToken = (token) => {
   try {
@@ -612,7 +614,7 @@ const Generator = () => {
 
       // Save to database
       const response = await axios.post(
-        'http://localhost:5000/api/colleges',
+        `${API_URL}/colleges`,
         dataToSave,
         {
           headers: {
@@ -694,7 +696,7 @@ const Generator = () => {
 
       // Save to database
       const response = await axios.post(
-        'http://localhost:5000/api/colleges',
+        `${API_URL}/colleges`,
         dataToSave,
         {
           headers: {

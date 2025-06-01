@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar, Clock } from 'lucide-react';
 
+const API_URL = 'https://websitecreator-3.onrender.com/api';
+
 const Preview = () => {
   const [college, setCollege] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ const Preview = () => {
         return;
       }
 
-      const response = await axios.get(`http://localhost:5000/api/colleges/${id}`, {
+      const response = await axios.get(`${API_URL}/colleges/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -55,7 +57,7 @@ const Preview = () => {
 
       // Save the current state of the college website
       await axios.put(
-        `http://localhost:5000/api/colleges/${id}`,
+        `${API_URL}/colleges/${id}`,
         college,
         {
           headers: { 
@@ -435,8 +437,8 @@ const Preview = () => {
                     <h3 className="text-xl font-semibold">{facility.name}</h3>
                   </div>
                   <p className="text-gray-600">{facility.description}</p>
-        </div>
-      ))}
+                </div>
+              ))}
             </div>
           </div>
         </section>

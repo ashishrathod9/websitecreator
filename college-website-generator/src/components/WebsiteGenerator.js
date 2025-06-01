@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+const API_URL = 'https://websitecreator-3.onrender.com/api';
+
 const WebsiteGenerator = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -24,7 +26,7 @@ const WebsiteGenerator = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/colleges/generate', formData);
+      const response = await axios.post(`${API_URL}/colleges/generate`, formData);
       setPreview(response.data);
     } catch (error) {
       console.error('Error generating website:', error);
