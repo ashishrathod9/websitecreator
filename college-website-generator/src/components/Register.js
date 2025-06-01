@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import config from '../config';
 
-const API_URL = 'https://websitecreator-4.onrender.com/api';
+const API_URL = config.API_URL;
 
 const Register = () => {
   const [formData, setFormData] = useState({

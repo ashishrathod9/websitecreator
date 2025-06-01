@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import config from '../config';
 
-const API_URL = 'https://websitecreator-4.onrender.com/api';
+const API_URL = config.API_URL;
 
 const WebsiteGenerator = () => {
   const [formData, setFormData] = useState({

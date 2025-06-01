@@ -9,7 +9,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: 'https://websitecreator-4.onrender.com',
+  origin: ['https://websitecreator-4.onrender.com', 'http://localhost:3000'],
   credentials: true
 }));
 

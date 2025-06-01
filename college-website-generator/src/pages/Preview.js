@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar } from 'lucide-react';
 
-const API_URL = 'https://websitecreator-4.onrender.com/api';
+const API_URL = config.API_URL;
 
 const Preview = () => {
   const [college, setCollege] = useState(null);
@@ -18,7 +19,7 @@ const Preview = () => {
 
   useEffect(() => {
     fetchCollege();
-  }, [id, fetchCollege]);
+  }, [id]);
 
   const fetchCollege = async () => {
     try {
@@ -455,10 +456,10 @@ const Preview = () => {
             <div>
               <h3 className="text-xl font-bold mb-4">Quick Links</h3>
               <ul className="space-y-2">
-                <li><span className="text-gray-400 hover:text-white transition-colors">About Us</span></li>
-                <li><span className="text-gray-400 hover:text-white transition-colors">Admissions</span></li>
-                <li><span className="text-gray-400 hover:text-white transition-colors">Academics</span></li>
-                <li><span className="text-gray-400 hover:text-white transition-colors">Contact</span></li>
+                <li><button className="text-gray-400 hover:text-white transition-colors">About Us</button></li>
+                <li><button className="text-gray-400 hover:text-white transition-colors">Admissions</button></li>
+                <li><button className="text-gray-400 hover:text-white transition-colors">Academics</button></li>
+                <li><button className="text-gray-400 hover:text-white transition-colors">Contact</button></li>
               </ul>
             </div>
             <div>

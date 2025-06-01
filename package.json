@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install-deps": "cd college-website-generator && npm install",
+    "install-all": "cd college-website-generator && npm install",
     "build": "cd college-website-generator && npm run build",
-    "vercel-build": "npm run install-deps && npm run build"
+    "start": "cd college-website-generator && npm run serve"
   },
   "engines": {
     "node": ">=18.0.0"

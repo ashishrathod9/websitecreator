@@ -1,7 +1,8 @@
 import axios from 'axios';
-import * as jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
+import config from '../config';
 
-const API_URL = 'https://websitecreator-4.onrender.com/api';
+const API_URL = config.API_URL;
 
 export const login = async (email, password) => {
   try {
@@ -34,7 +35,7 @@ export const getCurrentUser = () => {
   if (!token) return null;
   
   try {
-    const decoded = jwtDecode.jwtDecode(token);
+    const decoded = jwtDecode(token);
     return decoded;
   } catch (error) {
     console.error('Error decoding token:', error);
@@ -47,7 +48,7 @@ export const isAuthenticated = () => {
   if (!token) return false;
   
   try {
-    const decoded = jwtDecode.jwtDecode(token);
+    const decoded = jwtDecode(token);
     const currentTime = Date.now() / 1000;
     return decoded.exp > currentTime;
   } catch (error) {
