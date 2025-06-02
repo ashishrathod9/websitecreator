@@ -9,12 +9,14 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(cors({
   origin: [
-    'https://websitecreator-ttdr.vercel.app',
-    'https://websitecreator-cgzt.vercel.app',
-    'https://websitecreator-4.onrender.com'
+    'https://websitecreator-navy.vercel.app',
+    'https://websitecreator-12.onrender.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 // Disable buffering so that operations don't queue before DB connects
