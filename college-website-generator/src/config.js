@@ -1,4 +1,4 @@
-export const config = {
+export default const config = {
   // API URL for production
   API_URL: 'https://websitecreator-12.onrender.com/api',
   // Development API URL
