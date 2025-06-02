@@ -1,93 +1,58 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const app = express();
 
-// MongoDB connection configuration
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
-      socketTimeoutMS: 45000, // Increase socket timeout
-      connectTimeoutMS: 30000, // Increase connection timeout
-      maxPoolSize: 10, // Increase connection pool size
-      minPoolSize: 5, // Maintain minimum connections
-      retryWrites: true,
-      retryReads: true,
-    });
-    
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    process.exit(1); // Exit with failure
-  }
-};
-
-// Connect to MongoDB
-connectDB();
-
 // Middleware
 app.use(express.json({ limit: '10mb' }));
-
-// CORS configuration
 app.use(cors({
   origin: [
     'https://websitecreator-ttdr.vercel.app',
     'https://websitecreator-cgzt.vercel.app',
-    'https://websitecreator-4.onrender.com',
-    'https://websitecreator-12.onrender.com'
+    'https://websitecreator-4.onrender.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  credentials: true
 }));
 
-app.options('*', cors());
+// Disable buffering so that operations don't queue before DB connects
+mongoose.set('bufferCommands', false);
 
-// Remove the connection middleware completely for Vercel
-// Each route will handle its own connection
+// Connection options (no deprecated ones)
+const mongooseOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 15000,
+  connectTimeoutMS: 10000
+};
 
-// Routes - direct mounting without middleware
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/colleges', require('./routes/colleges'));
+// Connect and then load routes
+const startServer = async () => {
+  try {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) throw new Error('❌ MONGODB_URI is not defined in .env');
+    await mongoose.connect(uri, mongooseOptions);
+    console.log('✅ MongoDB connected');
 
-// Health check - simplified
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'development'
-  });
-});
+    // ✅ Only load routes after DB connection is successful
+    app.use('/api/auth', require('./routes/auth'));
+    app.use('/api/colleges', require('./routes/colleges'));
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'College Website Generator API is running',
-    timestamp: new Date().toISOString()
-  });
-});
+    // Health check route
+    app.get('/health', (req, res) => {
+      const status = ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState];
+      res.json({ db: status });
+    });
 
-// Simple error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    code: 'INTERNAL_ERROR'
-  });
-});
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  } catch (err) {
+    console.error('❌ MongoDB connection failed:', err.message);
+    process.exit(1);
+  }
+};
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.originalUrl
-  });
-});
-
-// Export for Vercel - no local server setup
-module.exports = app;
+startServer();
