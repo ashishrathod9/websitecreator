@@ -42,6 +42,7 @@ const startServer = async () => {
     // ✅ Only load routes after DB connection is successful
     app.use('/api/auth', require('./routes/auth'));
     app.use('/api/colleges', require('./routes/colleges'));
+    app.use('/api/templates', require('./routes/templates'));
 
     // Health check route
     app.get('/health', (req, res) => {
