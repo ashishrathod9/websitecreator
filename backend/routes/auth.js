@@ -33,15 +33,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user
+    // Create user (password will be hashed by the User model's pre-save middleware)
     const user = new User({
       name: name.trim(),
       email: normalizedEmail,
-      password: hashedPassword
+      password: password
     });
 
     await user.save();
@@ -131,8 +127,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Check password using the User model's comparePassword method
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
