@@ -257,6 +257,9 @@ function generateWebsiteHTML(college) {
                 <li><a href="#home">Home</a></li>
                 <li><a href="#about">About</a></li>
                 <li><a href="#programs">Programs</a></li>
+                <li><a href="#news">News</a></li>
+                <li><a href="#events">Events</a></li>
+                <li><a href="#facilities">Facilities</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
             <button class="mobile-menu-button">☰</button>
@@ -313,6 +316,215 @@ function generateWebsiteHTML(college) {
             </div>
         </section>
 
+        <section id="news" class="news">
+            <div class="container">
+                <h2>Latest News</h2>
+                <div class="news-grid">
+                    ${college.news?.map(item => `
+                        <div class="news-card">
+                            ${item.image ? `<img src="${item.image}" alt="${item.title}">` : ''}
+                            <div class="news-content">
+                                <h3>${item.title || 'News Title'}</h3>
+                                <p>${item.content || 'News content'}</p>
+                                <span class="news-date">${item.date ? new Date(item.date).toLocaleDateString() : 'Date'}</span>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="no-news">No news available at the moment.</div>'}
+                </div>
+            </div>
+        </section>
+
+        <section id="events" class="events">
+            <div class="container">
+                <h2>Upcoming Events</h2>
+                <div class="events-grid">
+                    ${college.events?.map(event => `
+                        <div class="event-card">
+                            ${event.image ? `<img src="${event.image}" alt="${event.title}">` : ''}
+                            <div class="event-content">
+                                <h3>${event.title || 'Event Title'}</h3>
+                                <p>${event.description || 'Event description'}</p>
+                                <div class="event-details">
+                                    <span class="event-date">${event.date ? new Date(event.date).toLocaleDateString() : 'Date'}</span>
+                                    <span class="event-location">${event.location || 'Location'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="no-events">No upcoming events at the moment.</div>'}
+                </div>
+            </div>
+        </section>
+
+        <section id="facilities" class="facilities">
+            <div class="container">
+                <h2>Our Facilities</h2>
+                <div class="facilities-grid">
+                    ${college.facilities?.map(facility => `
+                        <div class="facility-card">
+                            ${facility.image ? `<img src="${facility.image}" alt="${facility.name}">` : ''}
+                            <div class="facility-content">
+                                <h3>${facility.name || 'Facility Name'}</h3>
+                                <p>${facility.description || 'Facility description'}</p>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="no-facilities">No facilities information available at the moment.</div>'}
+                </div>
+            </div>
+        </section>
+
+        <section id="departments" class="departments">
+            <div class="container">
+                <h2>Our Departments</h2>
+                <div class="departments-grid">
+                    ${college.departments?.map(dept => `
+                        <div class="department-card">
+                            ${dept.image ? `<img src="${dept.image}" alt="${dept.name}">` : ''}
+                            <div class="department-content">
+                                <h3>${dept.name || 'Department Name'}</h3>
+                                <p>${dept.description || 'Department description'}</p>
+                                ${dept.head ? `<p class="department-head">Department Head: ${dept.head}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('') || '<div class="no-departments">No departments information available at the moment.</div>'}
+                </div>
+            </div>
+        </section>
+
+        <section id="faculty" class="faculty">
+            <div class="container">
+                <h2>Our Faculty</h2>
+                <div class="faculty-grid">
+                    ${college.faculty?.map(member => `
+                        <div class="faculty-card">
+                            ${member.image ? `<img src="${member.image}" alt="${member.name}">` : ''}
+                            <div class="faculty-content">
+                                <h3>${member.name || 'Faculty Name'}</h3>
+                                <p class="position">${member.position || 'Position'}</p>
+                                <p class="department">${member.department || 'Department'}</p>
+                                <p class="bio">${member.bio || 'Bio'}</p>
+                                <div class="contact-info">
+                                    ${member.email ? `<p>Email: ${member.email}</p>` : ''}
+                                    ${member.phone ? `<p>Phone: ${member.phone}</p>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="no-faculty">No faculty information available at the moment.</div>'}
+                </div>
+            </div>
+        </section>
+
+        <section id="courses" class="courses">
+            <div class="container">
+                <h2>Our Courses</h2>
+                <div class="courses-grid">
+                    ${college.courses?.map(course => `
+                        <div class="course-card">
+                            ${course.image ? `<img src="${course.image}" alt="${course.name}">` : ''}
+                            <div class="course-content">
+                                <h3>${course.name || 'Course Name'}</h3>
+                                <p class="code">${course.code || 'Course Code'}</p>
+                                <p class="description">${course.description || 'Course description'}</p>
+                                <div class="course-details">
+                                    ${course.credits ? `<p>Credits: ${course.credits}</p>` : ''}
+                                    ${course.duration ? `<p>Duration: ${course.duration}</p>` : ''}
+                                    ${course.prerequisites ? `<p>Prerequisites: ${course.prerequisites}</p>` : ''}
+                                    <p>Department: ${course.department || 'Department'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="no-courses">No courses information available at the moment.</div>'}
+                </div>
+            </div>
+        </section>
+
+        <section id="research" class="research">
+            <div class="container">
+                <h2>Research</h2>
+                <div class="research-grid">
+                    ${college.research?.map(project => `
+                        <div class="research-card">
+                            ${project.image ? `<img src="${project.image}" alt="${project.title}">` : ''}
+                            <div class="research-content">
+                                <h3>${project.title || 'Research Title'}</h3>
+                                <p class="description">${project.description || 'Research description'}</p>
+                                <p class="department">Department: ${project.department || 'Department'}</p>
+                                ${project.researchers ? `<p class="researchers">Researchers: ${project.researchers}</p>` : ''}
+                                ${project.publications ? `<p class="publications">Publications: ${project.publications}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('') || '<div class="no-research">No research information available at the moment.</div>'}
+                </div>
+            </div>
+        </section>
+
+        <section id="virtual-tour" class="virtual-tour">
+            <div class="container">
+                <h2>Virtual Tour</h2>
+                <div class="virtual-tour-content">
+                    ${college.virtualTour?.videoUrl ? `
+                        <div class="video-container">
+                            <iframe src="${college.virtualTour.videoUrl}" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                    ` : ''}
+                    ${college.virtualTour?.images?.length > 0 ? `
+                        <div class="tour-images">
+                            ${college.virtualTour.images.map(image => `
+                                <img src="${image}" alt="Campus Tour">
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    ${college.virtualTour?.description ? `
+                        <div class="tour-description">
+                            <p>${college.virtualTour.description}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </section>
+
+        <section id="admissions" class="admissions">
+            <div class="container">
+                <h2>Admissions</h2>
+                <div class="admissions-content">
+                    ${college.admissions?.requirements?.length > 0 ? `
+                        <div class="requirements">
+                            <h3>Requirements</h3>
+                            <ul>
+                                ${college.admissions.requirements.map(req => `
+                                    <li>${req}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    ${college.admissions?.deadlines?.length > 0 ? `
+                        <div class="deadlines">
+                            <h3>Important Deadlines</h3>
+                            <ul>
+                                ${college.admissions.deadlines.map(deadline => `
+                                    <li>
+                                        <strong>${deadline.title}</strong>
+                                        <span>${new Date(deadline.date).toLocaleDateString()}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    ${college.admissions?.applicationProcess ? `
+                        <div class="application-process">
+                            <h3>Application Process</h3>
+                            <p>${college.admissions.applicationProcess}</p>
+                        </div>
+                    ` : ''}
+                    ${college.admissions?.contactInfo ? `
+                        <div class="admissions-contact">
+                            <h3>Contact Admissions</h3>
+                            <p>${college.admissions.contactInfo}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </section>
+
         <section id="contact" class="contact">
             <div class="container">
                 <h2>Contact Us</h2>
@@ -363,6 +575,9 @@ function generateWebsiteHTML(college) {
                         <li><a href="#home">Home</a></li>
                         <li><a href="#about">About</a></li>
                         <li><a href="#programs">Programs</a></li>
+                        <li><a href="#news">News</a></li>
+                        <li><a href="#events">Events</a></li>
+                        <li><a href="#facilities">Facilities</a></li>
                         <li><a href="#contact">Contact</a></li>
                     </ul>
                 </div>
@@ -593,6 +808,185 @@ nav ul li a:hover {
     border-radius: 10px;
 }
 
+/* News Section */
+.news {
+    padding: 4rem 0;
+    background-color: var(--secondary-color);
+}
+
+.news h2 {
+    text-align: center;
+    margin-bottom: 3rem;
+    color: var(--primary-color);
+}
+
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.news-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.news-card:hover {
+    transform: translateY(-5px);
+}
+
+.news-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.news-content {
+    padding: 1.5rem;
+}
+
+.news-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.news-date {
+    display: block;
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.no-news {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    color: var(--secondary-color);
+}
+
+/* Events Section */
+.events {
+    padding: 4rem 0;
+}
+
+.events h2 {
+    text-align: center;
+    margin-bottom: 3rem;
+    color: var(--primary-color);
+}
+
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.event-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
+}
+
+.event-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.event-content {
+    padding: 1.5rem;
+}
+
+.event-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.event-details {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+.no-events {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    color: var(--secondary-color);
+}
+
+/* Facilities Section */
+.facilities {
+    padding: 4rem 0;
+    background-color: var(--secondary-color);
+}
+
+.facilities h2 {
+    text-align: center;
+    margin-bottom: 3rem;
+    color: var(--primary-color);
+}
+
+.facilities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.facility-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.facility-card:hover {
+    transform: translateY(-5px);
+}
+
+.facility-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.facility-content {
+    padding: 1.5rem;
+}
+
+.facility-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.no-facilities {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    color: var(--secondary-color);
+}
+
 /* Contact Section */
 .contact {
     padding: 6rem 0;
@@ -750,7 +1144,334 @@ footer {
     .stats {
         grid-template-columns: 1fr;
     }
-}`;
+}
+
+/* Departments Section */
+.departments {
+    padding: 4rem 0;
+    background-color: var(--secondary-color);
+}
+
+.departments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.department-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.department-card:hover {
+    transform: translateY(-5px);
+}
+
+.department-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.department-content {
+    padding: 1.5rem;
+}
+
+.department-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+/* Faculty Section */
+.faculty {
+    padding: 4rem 0;
+}
+
+.faculty-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.faculty-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.faculty-card:hover {
+    transform: translateY(-5px);
+}
+
+.faculty-card img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+
+.faculty-content {
+    padding: 1.5rem;
+}
+
+.faculty-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.faculty-content .position {
+    color: var(--accent-color);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.faculty-content .department {
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.faculty-content .bio {
+    margin-bottom: 1rem;
+}
+
+.faculty-content .contact-info {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+/* Courses Section */
+.courses {
+    padding: 4rem 0;
+    background-color: var(--secondary-color);
+}
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.course-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+}
+
+.course-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.course-content {
+    padding: 1.5rem;
+}
+
+.course-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.course-content .code {
+    color: var(--accent-color);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.course-content .description {
+    margin-bottom: 1rem;
+}
+
+.course-content .course-details {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+/* Research Section */
+.research {
+    padding: 4rem 0;
+}
+
+.research-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.research-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.research-card:hover {
+    transform: translateY(-5px);
+}
+
+.research-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.research-content {
+    padding: 1.5rem;
+}
+
+.research-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.research-content .description {
+    margin-bottom: 1rem;
+}
+
+.research-content .department {
+    color: var(--accent-color);
+    margin-bottom: 0.5rem;
+}
+
+.research-content .researchers,
+.research-content .publications {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin-top: 0.5rem;
+}
+
+/* Virtual Tour Section */
+.virtual-tour {
+    padding: 4rem 0;
+    background-color: var(--secondary-color);
+}
+
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.tour-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.tour-images img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.tour-description {
+    margin-top: 2rem;
+}
+
+/* Admissions Section */
+.admissions {
+    padding: 4rem 0;
+}
+
+.admissions-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.requirements,
+.deadlines,
+.application-process,
+.admissions-contact {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.requirements h3,
+.deadlines h3,
+.application-process h3,
+.admissions-contact h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.requirements ul,
+.deadlines ul {
+    list-style: none;
+}
+
+.requirements ul li,
+.deadlines ul li {
+    margin-bottom: 0.5rem;
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.requirements ul li:before,
+.deadlines ul li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--accent-color);
+}
+
+.deadlines ul li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.deadlines ul li strong {
+    color: var(--primary-color);
+}
+
+.deadlines ul li span {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+/* No Content Messages */
+.no-departments,
+.no-faculty,
+.no-courses,
+.no-research {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    color: var(--secondary-color);
+}
+`;
 }
 
 // Helper function to generate website JavaScript
