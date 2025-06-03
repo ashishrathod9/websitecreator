@@ -91,7 +91,7 @@ function Home() {
 
             {/* Subtitle */}
             <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Transform your educational institution's online presence with our AI-powered website generator. Create
+              Transform your educational institution's online presence with our  website generator. Create
               professional, responsive websites with dynamic content and modern design.
             </p>
 
