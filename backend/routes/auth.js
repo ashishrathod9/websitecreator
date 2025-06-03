@@ -192,6 +192,63 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Reset password route
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    // Validate input
+    if (!email || !newPassword) {
+      return res.status(400).json({ error: 'Email and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find user
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+
+    // Update password (will be hashed by the pre-save middleware)
+    user.password = newPassword;
+    await user.save();
+
+    // Create new JWT token
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET not configured');
+    }
+
+    const token = jwt.sign(
+      { userId: user._id.toString() },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Return success response
+    res.json({
+      message: 'Password reset successful',
+      token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email
+      }
+    });
+
+  } catch (error) {
+    console.error('Password reset error:', error);
+    res.status(500).json({
+      error: 'Password reset failed. Please try again.',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
 // Health check for auth routes
 router.get('/health', async (req, res) => {
   try {
