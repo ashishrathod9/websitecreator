@@ -28,8 +28,12 @@ const Profile = () => {
         const response = await axios.get(`${API_URL}/colleges`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        setColleges(response.data)
+        
+        // Ensure response.data is an array
+        const collegesData = Array.isArray(response.data) ? response.data : []
+        setColleges(collegesData)
       } catch (error) {
+        setColleges([])
         setError("Failed to fetch colleges")
         console.error("Error fetching colleges:", error)
       } finally {
