@@ -8,53 +8,114 @@ const archiver = require('archiver');
 const path = require('path');
 const fs = require('fs');
 
+// Middleware to handle CORS
+router.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://websitecreator-navy.vercel.app');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+});
+
+// Download website code - This needs to be before the /:id route
+router.get('/download/:id', async (req, res) => {
+    try {
+        const website = await Website.findById(req.params.id);
+        if (!website) {
+            return res.status(404).json({ message: 'Website not found' });
+        }
+
+        // Create a temporary directory for the files
+        const tempDir = path.join(__dirname, '../temp', website._id.toString());
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        // Generate HTML file
+        const htmlContent = generateHTML(website);
+        fs.writeFileSync(path.join(tempDir, 'index.html'), htmlContent);
+
+        // Generate CSS file
+        const cssContent = generateCSS(website);
+        fs.writeFileSync(path.join(tempDir, 'styles.css'), cssContent);
+
+        // Generate JavaScript file
+        const jsContent = generateJavaScript(website);
+        fs.writeFileSync(path.join(tempDir, 'script.js'), jsContent);
+
+        // Create a ZIP file
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Maximum compression
+        });
+
+        // Set the response headers
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename=${website.collegeName.toLowerCase().replace(/\s+/g, '-')}-website.zip`);
+
+        // Pipe the archive to the response
+        archive.pipe(res);
+
+        // Add the files to the archive
+        archive.directory(tempDir, false);
+
+        // Finalize the archive
+        await archive.finalize();
+
+        // Clean up the temporary directory
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch (error) {
+        console.error('Error generating download:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Generate website
 router.post('/generate', async (req, res) => {
-  try {
-    const collegeData = req.body;
-    
-    // Create a new college document
-    const college = new College(collegeData);
-    await college.save();
+    try {
+        const collegeData = req.body;
+        
+        // Create a new college document
+        const college = new College(collegeData);
+        await college.save();
 
-    // Generate HTML template
-    const html = generateWebsiteTemplate(college);
-    
-    res.json({ 
-      html,
-      collegeId: college._id 
-    });
-  } catch (error) {
-    console.error('Error generating website:', error);
-    res.status(500).json({ message: 'Error generating website' });
-  }
+        // Generate HTML template
+        const html = generateWebsiteTemplate(college);
+        
+        res.json({ 
+            html,
+            collegeId: college._id 
+        });
+    } catch (error) {
+        console.error('Error generating website:', error);
+        res.status(500).json({ message: 'Error generating website' });
+    }
 });
 
 // Get all colleges for the logged-in user
 router.get('/', auth, async (req, res) => {
-  try {
-    const colleges = await College.find({ createdBy: req.user._id });
-    res.json(colleges);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    try {
+        const colleges = await College.find({ createdBy: req.user._id });
+        res.json(colleges);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Get single college
 router.get('/:id', auth, async (req, res) => {
-  try {
-    const college = await College.findOne({ 
-      _id: req.params.id,
-      createdBy: req.user._id 
-    });
-    
-    if (!college) {
-      return res.status(404).json({ message: 'College not found' });
+    try {
+        const college = await College.findOne({ 
+            _id: req.params.id,
+            createdBy: req.user._id 
+        });
+        
+        if (!college) {
+            return res.status(404).json({ message: 'College not found' });
+        }
+        res.json(college);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    res.json(college);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 });
 
 // Create college
@@ -282,80 +343,6 @@ function generateWebsiteTemplate(college) {
     </html>
   `;
 }
-
-// Middleware to handle CORS
-router.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://websitecreator-navy.vercel.app');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    next();
-});
-
-// Get college by ID
-router.get('/:id', async (req, res) => {
-    try {
-        const website = await Website.findById(req.params.id);
-        if (!website) {
-            return res.status(404).json({ message: 'Website not found' });
-        }
-        res.json(website);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// Download website code
-router.get('/download/:id', async (req, res) => {
-    try {
-        const website = await Website.findById(req.params.id);
-        if (!website) {
-            return res.status(404).json({ message: 'Website not found' });
-        }
-
-        // Create a temporary directory for the files
-        const tempDir = path.join(__dirname, '../temp', website._id.toString());
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-        }
-
-        // Generate HTML file
-        const htmlContent = generateHTML(website);
-        fs.writeFileSync(path.join(tempDir, 'index.html'), htmlContent);
-
-        // Generate CSS file
-        const cssContent = generateCSS(website);
-        fs.writeFileSync(path.join(tempDir, 'styles.css'), cssContent);
-
-        // Generate JavaScript file
-        const jsContent = generateJavaScript(website);
-        fs.writeFileSync(path.join(tempDir, 'script.js'), jsContent);
-
-        // Create a ZIP file
-        const archive = archiver('zip', {
-            zlib: { level: 9 } // Maximum compression
-        });
-
-        // Set the response headers
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename=${website.collegeName.toLowerCase().replace(/\s+/g, '-')}-website.zip`);
-
-        // Pipe the archive to the response
-        archive.pipe(res);
-
-        // Add the files to the archive
-        archive.directory(tempDir, false);
-
-        // Finalize the archive
-        await archive.finalize();
-
-        // Clean up the temporary directory
-        fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch (error) {
-        console.error('Error generating download:', error);
-        res.status(500).json({ message: error.message });
-    }
-});
 
 // Helper functions to generate the website files
 function generateHTML(website) {
