@@ -57,10 +57,12 @@ const Preview = () => {
       );
       setCollege(response.data);
       setSaving(false);
+      setSaveStatus('success');
       alert('Website saved successfully!');
     } catch (error) {
       console.error('Error saving website:', error);
       setSaving(false);
+      setSaveStatus('error');
       alert('Error saving website. Please try again.');
     }
   };
@@ -202,23 +204,69 @@ const Preview = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Preview Website</h1>
-          <div className="flex gap-4">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className={`px-6 py-2 rounded-lg text-white font-medium ${
-                saving ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              {saving ? 'Saving...' : 'Save Website'}
-            </button>
+    <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
+      {/* Header with Save Button */}
+      <header style={{ backgroundColor: colors.primary, color: '#FFFFFF' }} className="p-6 sticky top-0 z-50">
+        <div className="container mx-auto">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-bold">{college.collegeName}</h1>
+              <p className="mt-2">{college.description}</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              {saveStatus === 'success' && (
+                <div className="flex items-center text-green-300 animate-fade-in">
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  <span>Saved successfully!</span>
+                </div>
+              )}
+              {saveStatus === 'error' && (
+                <div className="flex items-center text-red-300 animate-fade-in">
+                  <XCircle className="w-5 h-5 mr-2" />
+                  <span>Save failed</span>
+                </div>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center px-4 py-2 bg-white rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                style={{ color: colors.primary }}
+              >
+                <Save className="w-5 h-5 mr-2" />
+                {saving ? 'Saving...' : 'Save Website'}
+              </button>
+            </div>
           </div>
         </div>
+      </header>
 
+      {/* Navigation Tabs */}
+      <nav className="bg-white shadow-sm sticky top-[88px] z-40">
+        <div className="container mx-auto px-4">
+          <div className="flex space-x-8">
+            {['overview', 'academics', 'campus', 'admissions'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-4 px-2 border-b-2 transition-colors ${
+                  activeTab === tab
+                    ? 'border-current'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                style={{
+                  color: activeTab === tab ? colors.primary : undefined,
+                  borderColor: activeTab === tab ? colors.primary : undefined
+                }}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="pt-6">
         {/* Image Gallery */}
         {getAllImages().length > 0 && (
           <section className="relative bg-black">
@@ -267,31 +315,6 @@ const Preview = () => {
             </div>
           </section>
         )}
-
-        {/* Navigation Tabs */}
-        <nav className="bg-white shadow-sm">
-          <div className="container mx-auto px-4">
-            <div className="flex space-x-8">
-              {['overview', 'academics', 'campus', 'admissions'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-2 border-b-2 transition-colors ${
-                    activeTab === tab
-                      ? 'border-current'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                  style={{
-                    color: activeTab === tab ? colors.primary : undefined,
-                    borderColor: activeTab === tab ? colors.primary : undefined
-                  }}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
 
         {/* Contact Information with Icons */}
         <section className="py-8 bg-white">
@@ -442,26 +465,26 @@ const Preview = () => {
           </section>
         )}
 
-        {/* Footer with Social Links */}
-        <footer className={`bg-${colors.primary}-800 text-white py-8`}>
+        {/* Footer */}
+        <footer style={{ backgroundColor: colors.primary }} className="text-white py-8">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div>
                 <h3 className="text-xl font-bold mb-4">{college.collegeName}</h3>
-                <p className="text-gray-400">{college.description}</p>
+                <p className="text-gray-300">{college.description}</p>
               </div>
               <div>
                 <h3 className="text-xl font-bold mb-4">Quick Links</h3>
                 <ul className="space-y-2">
-                  <li><button className="text-gray-400 hover:text-white transition-colors">About Us</button></li>
-                  <li><button className="text-gray-400 hover:text-white transition-colors">Admissions</button></li>
-                  <li><button className="text-gray-400 hover:text-white transition-colors">Academics</button></li>
-                  <li><button className="text-gray-400 hover:text-white transition-colors">Contact</button></li>
+                  <li><button className="text-gray-300 hover:text-white transition-colors">About Us</button></li>
+                  <li><button className="text-gray-300 hover:text-white transition-colors">Admissions</button></li>
+                  <li><button className="text-gray-300 hover:text-white transition-colors">Academics</button></li>
+                  <li><button className="text-gray-300 hover:text-white transition-colors">Contact</button></li>
                 </ul>
               </div>
               <div>
                 <h3 className="text-xl font-bold mb-4">Contact Info</h3>
-                <ul className="space-y-2 text-gray-400">
+                <ul className="space-y-2 text-gray-300">
                   <li className="flex items-center space-x-2">
                     <MapPin className="w-4 h-4" />
                     <span>{college.location?.street}, {college.location?.city}</span>
@@ -482,7 +505,7 @@ const Preview = () => {
             </div>
           </div>
         </footer>
-      </div>
+      </main>
     </div>
   );
 };
