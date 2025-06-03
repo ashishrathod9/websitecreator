@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import config from '../config';
-import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar, Download } from 'lucide-react';
+import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar, Download, Package } from 'lucide-react';
 
 const API_URL = config.API_URL;
 
@@ -14,7 +14,7 @@ const Preview = () => {
   const [saveStatus, setSaveStatus] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
-  const [downloading, setDownloading] = useState(false);
+  const [delivering, setDelivering] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -67,11 +67,14 @@ const Preview = () => {
     }
   };
 
-  const handleDownload = async () => {
-    setDownloading(true);
+  const handleDelivery = async () => {
     try {
-      const response = await axios.get(`${API_URL}/colleges/download/${college._id}`, {
-        responseType: 'blob'
+      setDelivering(true);
+      const response = await axios.get(`${API_URL}/colleges/deliver/${college._id}`, {
+        responseType: 'blob',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
       });
       
       // Create a blob from the response data
@@ -91,10 +94,10 @@ const Preview = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading website:', error);
-      alert('Error downloading website. Please try again.');
+      console.error('Error delivering website:', error);
+      alert('Error delivering website. Please try again.');
     }
-    setDownloading(false);
+    setDelivering(false);
   };
 
   const nextImage = () => {
@@ -205,7 +208,7 @@ const Preview = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
-      {/* Header with Save Button */}
+      {/* Header with Save and Delivery Buttons */}
       <header style={{ backgroundColor: colors.primary, color: '#FFFFFF' }} className="p-6 sticky top-0 z-50">
         <div className="container mx-auto">
           <div className="flex justify-between items-center">
@@ -234,6 +237,15 @@ const Preview = () => {
               >
                 <Save className="w-5 h-5 mr-2" />
                 {saving ? 'Saving...' : 'Save Website'}
+              </button>
+              <button
+                onClick={handleDelivery}
+                disabled={delivering}
+                className="flex items-center px-4 py-2 bg-white rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                style={{ color: colors.primary }}
+              >
+                <Package className="w-5 h-5 mr-2" />
+                {delivering ? 'Preparing...' : 'Deliver Website'}
               </button>
             </div>
           </div>
