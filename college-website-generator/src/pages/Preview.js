@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import config from '../config';
-import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar } from 'lucide-react';
+import { Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, MapPin, Mail, Phone, Globe, Calendar, Download } from 'lucide-react';
 
 const API_URL = config.API_URL;
 
@@ -14,6 +14,7 @@ const Preview = () => {
   const [saveStatus, setSaveStatus] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
+  const [downloading, setDownloading] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -77,6 +78,36 @@ const Preview = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const response = await axios.get(`${API_URL}/colleges/download/${college._id}`, {
+        responseType: 'blob'
+      });
+      
+      // Create a blob from the response data
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${college.collegeName.toLowerCase().replace(/\s+/g, '-')}-website.zip`;
+      
+      // Trigger the download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading website:', error);
+      alert('Error downloading website. Please try again.');
+    }
+    setDownloading(false);
   };
 
   const nextImage = () => {
@@ -216,6 +247,14 @@ const Preview = () => {
               >
                 <Save className="w-5 h-5 mr-2" />
                 {saving ? 'Saving...' : 'Save Website'}
+              </button>
+              <button
+                onClick={handleDownload}
+                className="flex items-center px-4 py-2 bg-white rounded-lg hover:bg-gray-100 transition-colors"
+                style={{ color: colors.primary }}
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download Code
               </button>
             </div>
           </div>
